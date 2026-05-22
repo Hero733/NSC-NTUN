@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Co-op Ultimate POS | Deep Gradient Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-sky: #7dd3fc;
+            --color-blue: #2563eb;
+            --color-navy: #1e3a8a;
+            --color-purple: #4c1d95;
+        }
+        body { 
+            font-family: 'Anuphan', sans-serif;
+            background: linear-gradient(180deg, var(--color-sky) 0%, var(--color-blue) 35%, var(--color-navy) 70%, var(--color-purple) 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: white;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .btn-ios {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-ios:active { transform: scale(0.92); opacity: 0.8; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .tab-active { background: rgba(255, 255, 255, 0.2); box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div id="lock-screen" class="fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-3xl transition-all duration-700">
+        <div class="glass-panel p-10 rounded-[3rem] text-center max-w-sm w-full">
+            <img src="photo/logo.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/9716/9716700.png'" class="w-24 h-24 mx-auto mb-6 rounded-3xl shadow-2xl">
+            <h1 class="text-3xl font-bold mb-2">School Co-op</h1>
+            <p class="text-white/60 mb-8 text-xs uppercase tracking-widest">Authentication Required</p>
+            <input type="password" id="entry-pin" placeholder="••••" class="w-full bg-white/10 border border-white/20 rounded-2xl p-4 text-center text-3xl tracking-widest mb-6 focus:outline-none focus:ring-2 focus:ring-sky-400">
+            <button onclick="unlockApp()" class="w-full py-4 bg-white text-blue-700 rounded-2xl font-black text-lg btn-ios">UNLOCK SYSTEM</button>
+        </div>
+    </div>
+
+    <div id="app-container" class="hidden max-w-7xl mx-auto h-[90vh] flex flex-col glass-panel rounded-[3.5rem] overflow-hidden">
+        
+        <header class="p-6 md:px-10 flex justify-between items-center border-b border-white/10 bg-white/5">
+            <div class="flex items-center gap-5">
+                <img src="photo/logo.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/9716/9716700.png'" class="w-12 h-12 rounded-xl">
+                <div>
+                    <h2 class="text-2xl font-black tracking-tight">CO-OP POS</h2>
+                    <p id="clock" class="text-[10px] text-white/50 font-medium"></p>
+                </div>
+            </div>
+            <nav class="flex bg-black/20 p-1.5 rounded-2xl gap-1">
+                <button onclick="showTab('pos')" id="nav-pos" class="px-6 py-2 rounded-xl text-sm font-bold btn-ios tab-active">หน้าขาย</button>
+                <button onclick="showTab('inventory')" id="nav-inventory" class="px-6 py-2 rounded-xl text-sm font-bold btn-ios">สินค้า</button>
+                <button onclick="showTab('history')" id="nav-history" class="px-6 py-2 rounded-xl text-sm font-bold btn-ios">ประวัติ</button>
+                <button onclick="location.reload()" class="px-4 py-2 rounded-xl text-red-400 font-bold btn-ios">🔒</button>
+            </nav>
+        </header>
+
+        <main class="flex-1 overflow-hidden">
+            
+            <div id="tab-pos" class="h-full flex flex-col md:flex-row">
+                <div class="flex-[3] p-6 overflow-y-auto no-scrollbar border-r border-white/5">
+                    <div class="mb-6 flex gap-4">
+                        <input type="text" id="search-box" oninput="renderPOS()" placeholder="ค้นหาสินค้า / สแกนบาร์โค้ด..." class="flex-1 bg-white/10 border border-white/20 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-sky-400">
+                    </div>
+                    <div id="pos-grid" class="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        </div>
+                </div>
+                <div class="flex-1 bg-black/30 p-6 flex flex-col">
+                    <h3 class="text-xl font-bold mb-6 flex justify-between items-center">
+                        ตะกร้าสินค้า
+                        <span id="cart-qty" class="text-xs bg-white/20 px-2 py-1 rounded-lg">0 ชิ้น</span>
+                    </h3>
+                    <div id="cart-list" class="flex-1 overflow-y-auto no-scrollbar space-y-3"></div>
+                    
+                    <div class="pt-6 mt-4 border-t border-white/10 space-y-4">
+                        <div class="flex justify-between text-2xl font-black">
+                            <span>รวมทั้งสิ้น</span>
+                            <span id="total-price" class="text-sky-300">0.00 ฿</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="prepPayment('cash')" class="bg-emerald-500/80 p-4 rounded-2xl font-bold btn-ios">เงินสด</button>
+                            <button onclick="prepPayment('transfer')" class="bg-sky-500/80 p-4 rounded-2xl font-bold btn-ios">เงินโอน</button>
+                        </div>
+                        
+                        <div id="pay-ui" class="hidden animate-fade-in p-4 bg-white/5 rounded-3xl border border-white/10">
+                            <div id="cash-panel" class="hidden space-y-3">
+                                <input type="number" id="cash-received" oninput="calcChange()" placeholder="รับเงินมา..." class="w-full bg-black/40 p-4 rounded-xl text-center text-2xl font-bold border border-white/20">
+                                <div class="text-center text-lg text-yellow-400 font-bold">เงินทอน: <span id="change-amt">0</span> ฿</div>
+                            </div>
+                            <div id="transfer-panel" class="hidden text-center p-2">
+                                <img src="photo/QRcode/qr.png" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=COOP'" class="w-32 h-32 mx-auto rounded-xl border-4 border-white mb-2">
+                                <p class="text-[10px] text-white/40">สแกนเพื่อโอนเงิน</p>
+                            </div>
+                            <button onclick="finalizeSale()" class="w-full mt-4 bg-white text-black py-4 rounded-2xl font-black btn-ios">ยืนยันและพิมพ์ใบเสร็จ</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-inventory" class="hidden h-full p-8 overflow-y-auto no-scrollbar">
+                <div class="max-w-4xl mx-auto">
+                    <div class="flex justify-between items-center mb-8">
+                        <h2 class="text-4xl font-black tracking-tight">คลังสินค้า</h2>
+                        <button onclick="manageProduct('add')" class="bg-white text-blue-700 px-8 py-3 rounded-2xl font-bold btn-ios shadow-xl">+ เพิ่มสินค้า</button>
+                    </div>
+                    <div class="glass-panel rounded-[2.5rem] overflow-hidden border border-white/10">
+                        <table class="w-full text-left">
+                            <thead class="bg-white/5 text-white/40 text-[10px] uppercase tracking-widest font-bold">
+                                <tr><th class="p-6">ID</th><th class="p-6">รายการ</th><th class="p-6">ราคา</th><th class="p-6 text-center">จัดการ</th></tr>
+                            </thead>
+                            <tbody id="inventory-list" class="divide-y divide-white/5"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-history" class="hidden h-full p-8 overflow-y-auto no-scrollbar">
+                <div class="max-w-5xl mx-auto">
+                    <div class="flex flex-wrap justify-between items-end gap-6 mb-10">
+                        <div>
+                            <h2 class="text-4xl font-black tracking-tight">ประวัติการขาย</h2>
+                            <p class="text-white/40">สรุปภาพรวมและรายการขายย้อนหลัง</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <input type="date" id="history-date" onchange="renderHistory()" class="bg-white/10 border border-white/20 p-3 rounded-2xl text-sm">
+                            <button onclick="exportCSV()" class="bg-emerald-500 px-6 py-3 rounded-2xl font-bold text-sm btn-ios">Export Excel</button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                        <div class="glass-panel p-8 rounded-[2.5rem] flex justify-between items-center">
+                            <div>
+                                <p class="text-white/50 text-xs font-bold uppercase mb-1">ยอดรวมที่เลือก</p>
+                                <h3 id="hist-total-amt" class="text-4xl font-black text-sky-300">0 ฿</h3>
+                            </div>
+                            <div class="text-5xl opacity-20">💰</div>
+                        </div>
+                        <div class="glass-panel p-8 rounded-[2.5rem] flex justify-between items-center">
+                            <div>
+                                <p class="text-white/50 text-xs font-bold uppercase mb-1">จำนวนบิลที่เลือก</p>
+                                <h3 id="hist-bill-count" class="text-4xl font-black text-purple-300">0</h3>
+                            </div>
+                            <div class="text-5xl opacity-20">🧾</div>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel rounded-[2.5rem] overflow-hidden border border-white/10">
+                        <table class="w-full text-left">
+                            <thead class="bg-white/5 text-white/40 text-[10px] uppercase font-bold">
+                                <tr><th class="p-6">วัน-เวลา</th><th class="p-6">สินค้า</th><th class="p-6">ยอดรวม</th><th class="p-6">จ่ายโดย</th></tr>
+                            </thead>
+                            <tbody id="history-list" class="divide-y divide-white/5"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        const ADMIN_PIN = "21933";
+        let products = JSON.parse(localStorage.getItem('coop_db_products')) || [
+            { id: '1001', name: 'น้ำดื่มสิงห์', price: 10 },
+            { id: '1002', name: 'สมุดโรงเรียน', price: 15 },
+            { id: '1003', name: 'นมไทย-เดนมาร์ค', price: 12 }
+        ];
+        let cart = [];
+        let history = JSON.parse(localStorage.getItem('coop_db_history')) || [];
+        let payMethod = 'cash';
+
+        // Security
+        function unlockApp() {
+            const pin = document.getElementById('entry-pin').value;
+            if (pin === ADMIN_PIN) {
+                document.getElementById('lock-screen').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                renderPOS();
+            } else { alert("ACCESS DENIED: PIN INCORRECT"); }
+        }
+
+        // Tab Switching
+        function showTab(tab) {
+            ['pos', 'inventory', 'history'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`nav-${t}`).classList.remove('tab-active');
+            });
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            document.getElementById(`nav-${tab}`).classList.add('tab-active');
+            if(tab === 'inventory') renderInventory();
+            if(tab === 'history') renderHistory();
+        }
+
+        // POS System
+        function renderPOS() {
+            const q = document.getElementById('search-box').value.toLowerCase();
+            const grid = document.getElementById('pos-grid');
+            grid.innerHTML = products.filter(p => p.name.includes(q) || p.id.includes(q)).map(p => `
+                <div onclick="addToCart('${p.id}')" class="glass-panel p-6 rounded-3xl text-center btn-ios cursor-pointer border-white/10 hover:bg-white/20">
+                    <div class="text-3xl mb-3">📦</div>
+                    <div class="font-bold text-sm truncate">${p.name}</div>
+                    <div class="text-sky-300 font-bold mt-2">${p.price} ฿</div>
+                </div>
+            `).join('');
+        }
+
+        function addToCart(id) {
+            const p = products.find(i => i.id === id);
+            cart.push({...p, cartId: Date.now()});
+            updateCart();
+        }
+
+        function updateCart() {
+            const list = document.getElementById('cart-list');
+            const total = cart.reduce((s, i) => s + i.price, 0);
+            document.getElementById('cart-qty').innerText = cart.length + ' ชิ้น';
+            document.getElementById('total-price').innerText = total.toFixed(2) + ' ฿';
+            
+            list.innerHTML = cart.map((item, idx) => `
+                <div class="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5 animate-fade-in">
+                    <div>
+                        <div class="text-sm font-bold">${item.name}</div>
+                        <div class="text-[10px] text-white/40">${item.id}</div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="font-bold text-sky-300 text-sm">${item.price}฿</span>
+                        <button onclick="removeFromCart(${idx})" class="text-red-400 text-xs">X</button>
+                    </div>
+                </div>
+            `).join('');
+            calcChange();
+        }
+
+        function removeFromCart(idx) {
+            cart.splice(idx, 1);
+            updateCart();
+        }
+
+        function prepPayment(method) {
+            payMethod = method;
+            document.getElementById('pay-ui').classList.remove('hidden');
+            document.getElementById('cash-panel').classList.toggle('hidden', method !== 'cash');
+            document.getElementById('transfer-panel').classList.toggle('hidden', method !== 'transfer');
+        }
+
+        function calcChange() {
+            const total = cart.reduce((s, i) => s + i.price, 0);
+            const received = parseFloat(document.getElementById('cash-received').value) || 0;
+            const change = received - total;
+            document.getElementById('change-amt').innerText = (change > 0 ? change : 0).toFixed(2);
+        }
+
+        function finalizeSale() {
+            if(cart.length === 0) return;
+            const total = cart.reduce((s, i) => s + i.price, 0);
+            const sale = {
+                timestamp: new Date().toISOString(),
+                items: cart.map(c => c.name).join(', '),
+                total: total,
+                method: payMethod
+            };
+            history.push(sale);
+            localStorage.setItem('coop_db_history', JSON.stringify(history));
+            
+            alert(`🎉 ขายสำเร็จ!\nยอดรวม: ${total} บาท\nคืนค่าระบบเพื่อรับลูกค้ารายถัดไป`);
+            cart = [];
+            document.getElementById('pay-ui').classList.add('hidden');
+            document.getElementById('cash-received').value = '';
+            updateCart();
+        }
+
+        // Inventory
+        function renderInventory() {
+            const list = document.getElementById('inventory-list');
+            list.innerHTML = products.map(p => `
+                <tr class="hover:bg-white/5 transition">
+                    <td class="p-6 text-xs font-mono text-white/50">#${p.id}</td>
+                    <td class="p-6 font-bold text-sm">${p.name}</td>
+                    <td class="p-6 font-black text-sky-300">${p.price} ฿</td>
+                    <td class="p-6 text-center">
+                        <button onclick="manageProduct('delete', '${p.id}')" class="text-red-400 bg-red-400/10 px-4 py-1 rounded-full text-xs">ลบ</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function manageProduct(action, id) {
+            const pin = prompt("รหัสรักษาความปลอดภัย:");
+            if(pin !== ADMIN_PIN) return alert("รหัสผิด!");
+
+            if(action === 'add') {
+                const name = prompt("ชื่อสินค้า:");
+                const price = parseFloat(prompt("ราคา:"));
+                if(name && price) {
+                    products.push({ id: Date.now().toString().slice(-4), name, price });
+                    localStorage.setItem('coop_db_products', JSON.stringify(products));
+                    renderInventory();
+                    renderPOS();
+                }
+            } else if(action === 'delete') {
+                products = products.filter(p => p.id !== id);
+                localStorage.setItem('coop_db_products', JSON.stringify(products));
+                renderInventory();
+                renderPOS();
+            }
+        }
+
+        // History
+        function renderHistory() {
+            const date = document.getElementById('history-date').value;
+            const list = history.filter(h => !date || h.timestamp.includes(date));
+            const total = list.reduce((s, h) => s + h.total, 0);
+            
+            document.getElementById('hist-total-amt').innerText = total.toLocaleString() + ' ฿';
+            document.getElementById('hist-bill-count').innerText = list.length;
+            
+            document.getElementById('history-list').innerHTML = list.slice().reverse().map(h => `
+                <tr class="hover:bg-white/5 transition">
+                    <td class="p-6 text-xs text-white/40">${new Date(h.timestamp).toLocaleString()}</td>
+                    <td class="p-6 text-xs truncate max-w-[150px]">${h.items}</td>
+                    <td class="p-6 font-bold text-emerald-400">${h.total.toFixed(2)}</td>
+                    <td class="p-6"><span class="bg-white/10 px-3 py-1 rounded-lg text-[10px] uppercase font-bold">${h.method}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function exportCSV() {
+            let csv = "Timestamp,Items,Total,Method\n";
+            history.forEach(h => { csv += `"${h.timestamp}","${h.items}",${h.total},${h.method}\n`; });
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `COOP_REPORT_${new Date().toLocaleDateString()}.csv`;
+            link.click();
+        }
+
+        // Utils
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleString('th-TH', { dateStyle: 'full', timeStyle: 'medium' });
+        }, 1000);
+    </script>
+</body>
+</html>
