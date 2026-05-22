@@ -3,279 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NSC Access - Secure Login</title>
+    <title>NSC Portal - Cloud Access</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
-        /* CSS Variables for Easy Customization (Hero UI Inspired) */
         :root {
-            --primary-color: #007AFF; /* iOS Blue */
-            --bg-color: #F2F2F7; /* iOS Light Gray Background */
-            --card-bg: rgba(255, 255, 255, 0.7); /* Glassmorphism Base */
-            --text-primary: #000000;
-            --text-secondary: #8E8E93;
-            --border-radius-xl: 28px; /* High Roundness for iOS 27 */
-            --border-radius-md: 14px;
-            --blur-effect: blur(20px) saturate(180%); /* Strong Glass Effect */
-            --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.08);
-            --transition: all 0.3s ease;
+            --primary-color: #007AFF;
+            --ios-bg: #f2f2f7;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --blur: blur(25px) saturate(180%);
         }
 
-        /* Dark Mode Support (Automatic) */
         @media (prefers-color-scheme: dark) {
             :root {
-                --bg-color: #000000;
-                --card-bg: rgba(28, 28, 30, 0.7);
-                --text-primary: #FFFFFF;
-                --text-secondary: #AEAEB2;
+                --ios-bg: #000000;
+                --glass-bg: rgba(28, 28, 30, 0.7);
             }
         }
 
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Roboto, sans-serif;
-            background-color: var(--bg-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro", sans-serif;
+            background-color: var(--ios-bg);
+            display: flex; justify-content: center; align-items: center;
             overflow: hidden;
         }
 
-        /* Background Visual Element (Add depth like iOS) */
-        .bg-gradient {
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(0,122,255,0.15) 0%, rgba(255,255,255,0) 70%);
-            filter: blur(50px);
-            z-index: -1;
+        /* --- Cloud Warp Transition --- */
+        .cloud-overlay {
+            position: fixed; top: 0; left: -100%; width: 200%; height: 100%;
+            background: radial-gradient(circle, #fff 0%, #f0f0f0 40%, rgba(255,255,255,0) 70%);
+            z-index: 9999; pointer-events: none;
+            filter: blur(50px); opacity: 0;
+            transition: transform 1.2s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.5s;
         }
 
-        /* Login Card - Glassmorphism Style */
-        .login-card {
-            background: var(--card-bg);
-            backdrop-filter: var(--blur-effect);
-            -webkit-backdrop-filter: var(--blur-effect); /* Safari Support */
-            padding: 40px 30px;
-            border-radius: var(--border-radius-xl);
-            box-shadow: var(--shadow-soft);
-            width: 90%;
-            max-width: 360px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: var(--transition);
+        .cloud-overlay.active {
+            opacity: 1; transform: translateX(100%);
         }
 
-        /* Header / Logo Section */
-        .logo-area {
-            margin-bottom: 35px;
+        /* --- Login Card --- */
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+            padding: 40px 30px; border-radius: 32px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            width: 340px; text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .logo-icon {
-            width: 64px;
-            height: 64px;
-            background: linear-gradient(135deg, #007AFF 0%, #00C7FF 100%);
-            border-radius: 16px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0 auto 15px auto;
-            color: white;
-            font-size: 32px;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
+        .hidden { display: none; opacity: 0; transform: scale(0.9); }
+
+        .logo-box {
+            width: 70px; height: 70px;
+            background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+            border-radius: 18px; margin: 0 auto 20px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         }
 
-        h2 {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--text-primary);
-            letter-spacing: -0.5px;
-        }
-
-        p.subtitle {
-            margin: 5px 0 0 0;
-            font-size: 15px;
-            color: var(--text-secondary);
-        }
-
-        /* Input Group Style */
-        .input-group {
-            margin-bottom: 15px;
-            text-align: left;
-        }
+        h2 { font-weight: 700; margin: 10px 0; letter-spacing: -0.5px; color: var(--ios-bg === '#000000' ? '#fff' : '#000'); }
+        p { color: #8e8e93; font-size: 14px; margin-bottom: 25px; }
 
         input {
-            width: 100%;
-            padding: 16px 20px;
-            margin: 0;
-            border-radius: var(--border-radius-md);
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            background-color: rgba(255, 255, 255, 0.8);
-            font-size: 16px;
-            box-sizing: border-box;
-            transition: var(--transition);
-            color: #000; /* Light mode text */
+            width: 100%; padding: 15px; border-radius: 14px; border: none;
+            background: rgba(0,0,0,0.05); margin-bottom: 15px;
+            font-size: 16px; box-sizing: border-box; outline: none;
+            text-align: center; font-weight: 600; letter-spacing: 2px;
         }
 
-        @media (prefers-color-scheme: dark) {
-            input {
-                background-color: rgba(44, 44, 46, 0.8);
-                border-color: rgba(255, 255, 255, 0.05);
-                color: #fff;
-            }
-        }
-
-        input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            background-color: #FFFFFF;
-            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
-        }
-        
-        @media (prefers-color-scheme: dark) {
-            input:focus {
-                background-color: #1C1C1E;
-            }
-        }
-
-        /* Login Button Style */
         button {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(180deg, #007AFF 0%, #0062D1 100%);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius-md);
-            cursor: pointer;
-            font-size: 17px;
-            font-weight: 600;
-            margin-top: 10px;
-            transition: var(--transition);
-            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+            width: 100%; padding: 16px; border-radius: 14px; border: none;
+            background: #007AFF; color: #fff; font-size: 16px; font-weight: 600;
+            cursor: pointer; transition: 0.3s;
         }
 
-        button:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
+        /* --- Loading Spinner --- */
+        .spinner {
+            border: 3px solid rgba(0,0,0,0.1); border-top: 3px solid var(--primary-color);
+            border-radius: 50%; width: 30px; height: 30px;
+            animation: spin 1s linear infinite; margin: 20px auto;
         }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        button:active {
-            transform: translateY(1px);
-            opacity: 1;
-        }
-
-        /* Message / Error Box (iOS Alert Style) */
-        #message {
-            margin-top: 20px;
-            font-size: 14px;
-            min-height: 1.4em;
-            padding: 10px;
-            border-radius: 8px;
-            transition: var(--transition);
-        }
-        
-        .error-msg {
-            color: #FF3B30; /* iOS Red */
-            background-color: rgba(255, 59, 48, 0.1);
-        }
-        
-        .success-msg {
-            color: #34C759; /* iOS Green */
-            background-color: rgba(52, 199, 89, 0.1);
-        }
-
+        #message { margin-top: 15px; font-size: 13px; color: #ff3b30; }
     </style>
 </head>
 <body>
 
-<div class="bg-gradient"></div>
+<div class="cloud-overlay" id="cloud"></div>
 
-<div class="login-card">
-    <div class="logo-area">
-        <div class="logo-icon">N</div>
-        <h2>NSC Port</h2>
-        <p class="subtitle">กรอกรหัสผ่านเพื่อเข้าสู่ระบบ</p>
-    </div>
-
-    <div class="input-group">
-        <input type="email" id="emailInput" placeholder="อีเมล (เช่น name@mail.com)" required>
-    </div>
-    <div class="input-group">
-        <input type="password" id="passwordInput" placeholder="รหัสผ่าน" required>
-    </div>
-
-    <button onclick="checkLogin()">เข้าสู่ระบบ</button>
+<div class="card" id="step-google">
+    <div class="logo-box">☁️</div>
+    <h2>NSC Cloud</h2>
+    <p>เข้าสู่ระบบด้วย Google เพื่อดำเนินการต่อ</p>
     
+    <div id="g_id_onload"
+         data-client_id="802485672001-7tuhmifm1ph2mb09hle6r6hf0tahu9gv.apps.googleusercontent.com"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false">
+    </div>
+    <div class="g_id_signin" data-type="standard" data-shape="pill" data-theme="filled_blue" data-text="signin_with" data-size="large" data-logo_alignment="left"></div>
+</div>
+
+<div class="card hidden" id="step-loading">
+    <div class="spinner"></div>
+    <p>กำลังตรวจสอบความปลอดภัย...</p>
+</div>
+
+<div class="card hidden" id="step-password">
+    <div class="logo-box">🔒</div>
+    <h2>Verification</h2>
+    <p>กรุณากรอกรหัสผ่าน NTUN</p>
+    <input type="password" id="passInput" placeholder="••••••••" maxlength="10">
+    <button onclick="verifyPassword()">Verify & Access</button>
     <div id="message"></div>
 </div>
 
 <script>
-    // รหัสผ่านที่ถูกต้องที่กำหนดใหม่
-    const CORRECT_PASSWORD = "NTUN2026"; 
+    const CLOUD = document.getElementById('cloud');
+    const CORRECT_PW = "NTUN2026";
 
-    function checkLogin() {
-        const email = document.getElementById("emailInput").value.trim();
-        const password = document.getElementById("passwordInput").value;
-        const messageDiv = document.getElementById("message");
+    // เมื่อล็อกอิน Google สำเร็จ
+    function handleCredentialResponse(response) {
+        console.log("Encoded JWT ID token: " + response.credential);
+        
+        // สลับไปหน้า Loading
+        switchStep('step-google', 'step-loading');
+        
+        // หน่วงเวลาเหมือนกำลังโหลดข้อมูล
+        setTimeout(() => {
+            switchStep('step-loading', 'step-password');
+        }, 2000);
+    }
 
-        // รีเซ็ตสไตล์ข้อความ
-        messageDiv.className = "";
-        messageDiv.textContent = "";
+    // เมื่อกดยืนยันรหัสผ่าน
+    function verifyPassword() {
+        const input = document.getElementById('passInput').value;
+        const msg = document.getElementById('message');
+        const email = "user_cloud"; // จำลองชื่ออีเมลสำหรับการล็อค
 
-        if (!email || !password) {
-            showMessage("error-msg", "กรุณากรอกอีเมลและรหัสผ่านให้ครบถ้วน");
+        // เช็คล็อค 1 วัน (โค้ดชุดเดิมจากครั้งที่แล้ว)
+        const lockUntil = localStorage.getItem(email + "_lockUntil");
+        if (lockUntil && new Date().getTime() < parseInt(lockUntil)) {
+            msg.textContent = "บัญชีนี้ถูกล็อคชั่วคราว ลองใหม่พรุ่งนี้";
             return;
         }
 
-        const attemptsKey = email + "_attempts";
-        const lockTimeKey = email + "_lockUntil";
-        const now = new Date().getTime();
-        const lockUntil = localStorage.getItem(lockTimeKey);
-
-        // 1. ตรวจสอบล็อค 1 วัน
-        if (lockUntil && now < parseInt(lockUntil)) {
-            const unlockDate = new Date(parseInt(lockUntil));
-            showMessage("error-msg", `อีเมลนี้ถูกระงับชั่วคราว ลองใหม่หลัง: ${unlockDate.toLocaleTimeString()}`);
-            return;
-        }
-
-        // 2. รหัสผ่านถูกต้อง
-        if (password === CORRECT_PASSWORD) {
-            localStorage.removeItem(attemptsKey);
-            localStorage.removeItem(lockTimeKey);
-            showMessage("success-msg", "เข้าสู่ระบบสำเร็จ! กำลังเปลี่ยนหน้า...");
+        if (input === CORRECT_PW) {
+            msg.style.color = "#34c759";
+            msg.textContent = "ยืนยันสำเร็จ กำลังวาร์ป...";
             
-            setTimeout(() => {
-                window.location.href = "https://hero733.github.io/Nsc-/";
-            }, 1200);
-            return;
-        }
-
-        // 3. รหัสผ่านผิด
-        let attempts = parseInt(localStorage.getItem(attemptsKey) || "0");
-        attempts++;
-
-        if (attempts >= 5) {
-            // ล็อค 1 วัน
-            const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
-            localStorage.setItem(lockTimeKey, now + oneDayInMilliseconds);
-            localStorage.removeItem(attemptsKey);
-            showMessage("error-msg", "ผิดครบ 5 ครั้ง บัญชีนี้ถูกล็อค 1 วัน");
+            startWarp();
         } else {
-            localStorage.setItem(attemptsKey, attempts);
-            showMessage("error-msg", `รหัสผ่านผิด! (เหลืออีก ${5 - attempts} ครั้ง)`);
+            handleWrongPassword(email);
         }
     }
 
-    // Helper function to show formatted messages
-    function showMessage(type, text) {
-        const messageDiv = document.getElementById("message");
-        messageDiv.textContent = text;
-        messageDiv.className = type;
+    function handleWrongPassword(email) {
+        const msg = document.getElementById('message');
+        let attempts = parseInt(localStorage.getItem(email + "_attempts") || "0") + 1;
+        
+        if (attempts >= 5) {
+            localStorage.setItem(email + "_lockUntil", new Date().getTime() + (24 * 60 * 60 * 1000));
+            localStorage.removeItem(email + "_attempts");
+            msg.textContent = "ผิดครบ 5 ครั้ง บัญชีโดนล็อค 1 วัน";
+        } else {
+            localStorage.setItem(email + "_attempts", attempts);
+            msg.textContent = `รหัสผิด! (เหลืออีก ${5 - attempts} ครั้ง)`;
+        }
+    }
+
+    // แอนิเมชั่นเมฆและวาปร์
+    function startWarp() {
+        // เริ่มแอนิเมชั่นเมฆเลื่อน
+        CLOUD.classList.add('active');
+        
+        // เมื่อเมฆบังเต็มจอ (ประมาณ 0.8 วิ) ให้เปลี่ยนหน้า
+        setTimeout(() => {
+            window.location.href = "https://hero733.github.io/Nsc-/";
+        }, 800);
+    }
+
+    // Helper สลับหน้า Card
+    function switchStep(oldId, newId) {
+        document.getElementById(oldId).classList.add('hidden');
+        setTimeout(() => {
+            document.getElementById(oldId).style.display = 'none';
+            const newElem = document.getElementById(newId);
+            newElem.style.display = 'block';
+            setTimeout(() => {
+                newElem.classList.remove('hidden');
+            }, 50);
+        }, 500);
     }
 </script>
 
