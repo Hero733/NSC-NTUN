@@ -51,19 +51,19 @@
             transform: translateX(200%);
         }
 
-        .hidden-step { display: none; }
+        .hidden-step { display: none !important; }
     </style>
 </head>
 <body class="flex items-center justify-center p-4">
 
     <div id="cloud-warp"></div>
 
-    <div id="step-google" class="glass-panel p-10 rounded-[3rem] text-center max-w-sm w-full animate-fade-in">
+    <div id="step-google" class="glass-panel p-10 rounded-[3rem] text-center max-w-sm w-full">
         <div class="w-24 h-24 bg-white/20 mx-auto mb-6 rounded-3xl flex items-center justify-center text-4xl shadow-2xl">☁️</div>
         <h1 class="text-3xl font-bold mb-2">NSC Cloud</h1>
         <p class="text-white/60 mb-8 text-xs uppercase tracking-widest">Sign in with Google</p>
         
-        <div class="flex justify-center">
+        <div class="flex justify-center mb-4">
             <div id="g_id_onload"
                  data-client_id="802485672001-7tuhmifm1ph2mb09hle6r6hf0tahu9gv.apps.googleusercontent.com"
                  data-callback="handleGoogleLogin"
@@ -71,6 +71,10 @@
             </div>
             <div class="g_id_signin" data-type="standard" data-shape="pill" data-theme="filled_blue" data-text="signin_with" data-size="large"></div>
         </div>
+        
+        <button onclick="mockGoogleLogin()" class="mt-4 text-xs text-white/40 underline hover:text-white transition">
+            [ทดสอบ] ข้าม Google Login
+        </button>
     </div>
 
     <div id="step-password" class="hidden-step glass-panel p-10 rounded-[3rem] text-center max-w-sm w-full">
@@ -90,47 +94,53 @@
     <script>
         const CORRECT_PIN = "NTUN2026";
         const TARGET_URL = "https://hero733.github.io/Nsc-/";
-        let userEmail = "guest"; // จะถูกเขียนทับด้วย email จาก Google
+        let userEmail = "guest"; 
 
-        // 1. จัดการเมื่อ Google Login สำเร็จ
+        // 1. จัดการเมื่อ Google Login สำเร็จ (ระบบจริง)
         function handleGoogleLogin(response) {
-            // ถอดรหัส JWT เบื้องต้น (เพื่อให้ได้ email มาใช้ทำระบบล็อค)
-            const payload = JSON.parse(atob(response.credential.split('.')[1]));
-            userEmail = payload.email;
+            try {
+                const payload = JSON.parse(atob(response.credential.split('.')[1]));
+                userEmail = payload.email;
+                switchToPasswordStep();
+            } catch (error) {
+                console.error("Google Auth Error", error);
+            }
+        }
 
-            // สลับหน้าจอ
+        // 1.5. จำลองข้าม Google (ระบบทดสอบ)
+        function mockGoogleLogin() {
+            userEmail = "test_user@gmail.com"; 
+            switchToPasswordStep();
+        }
+
+        // สลับหน้า Card
+        function switchToPasswordStep() {
             document.getElementById('step-google').classList.add('hidden-step');
             document.getElementById('step-password').classList.remove('hidden-step');
         }
 
-        // 2. ตรวจสอบการเข้าถึง
+        // 2. ตรวจสอบรหัสผ่าน & ระบบล็อค
         function checkAccess() {
             const inputPin = document.getElementById('entry-pin').value;
             const errorMsg = document.getElementById('error-msg');
             const now = new Date().getTime();
 
-            // คีย์สำหรับเก็บข้อมูลแยกตามอีเมล
             const lockKey = userEmail + "_lockUntil";
             const attemptKey = userEmail + "_attempts";
 
-            // เช็คสถานะการล็อค 1 วัน
             const lockUntil = localStorage.getItem(lockKey);
             if (lockUntil && now < parseInt(lockUntil)) {
-                const remaining = new Date(parseInt(lockUntil));
                 errorMsg.innerText = "ถูกล็อคชั่วคราว ลองใหม่พรุ่งนี้";
                 return;
             }
 
             if (inputPin === CORRECT_PIN) {
-                // ถ้าถูก: เคลียร์ประวัติ และเริ่มวาร์ป
                 localStorage.removeItem(attemptKey);
                 localStorage.removeItem(lockKey);
                 errorMsg.className = "mt-4 text-emerald-300 text-sm font-medium";
                 errorMsg.innerText = "ACCESS GRANTED. WARPING...";
-                
                 triggerCloudWarp();
             } else {
-                // ถ้าผิด: นับจำนวนครั้ง
                 let attempts = parseInt(localStorage.getItem(attemptKey) || "0") + 1;
                 
                 if (attempts >= 5) {
@@ -141,10 +151,6 @@
                 } else {
                     localStorage.setItem(attemptKey, attempts);
                     errorMsg.innerText = `รหัสผิด! เหลือโอกาสอีก ${5 - attempts} ครั้ง`;
-                    // สั่นช่อง input แบบ iOS
-                    const inputField = document.getElementById('entry-pin');
-                    inputField.classList.add('translate-x-1');
-                    setTimeout(() => inputField.classList.remove('translate-x-1'), 100);
                 }
             }
         }
@@ -152,8 +158,6 @@
         // 3. แอนิเมชั่นเมฆวาร์ป
         function triggerCloudWarp() {
             document.body.classList.add('warp-active');
-            
-            // รอให้เมฆเลื่อนมาบังจอ (ประมาณ 0.7-0.8 วินาที) แล้วเปลี่ยนหน้า
             setTimeout(() => {
                 window.location.href = TARGET_URL;
             }, 850);
