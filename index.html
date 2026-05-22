@@ -2,124 +2,280 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เข้าสู่ระบบ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NSC Access - Secure Login</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        /* CSS Variables for Easy Customization (Hero UI Inspired) */
+        :root {
+            --primary-color: #007AFF; /* iOS Blue */
+            --bg-color: #F2F2F7; /* iOS Light Gray Background */
+            --card-bg: rgba(255, 255, 255, 0.7); /* Glassmorphism Base */
+            --text-primary: #000000;
+            --text-secondary: #8E8E93;
+            --border-radius-xl: 28px; /* High Roundness for iOS 27 */
+            --border-radius-md: 14px;
+            --blur-effect: blur(20px) saturate(180%); /* Strong Glass Effect */
+            --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+        }
+
+        /* Dark Mode Support (Automatic) */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #000000;
+                --card-bg: rgba(28, 28, 30, 0.7);
+                --text-primary: #FFFFFF;
+                --text-secondary: #AEAEB2;
+            }
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Roboto, sans-serif;
+            background-color: var(--bg-color);
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            background-color: #f4f4f9;
-            margin: 0;
+            overflow: hidden;
         }
-        .login-container {
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            width: 300px;
-            text-align: center;
+
+        /* Background Visual Element (Add depth like iOS) */
+        .bg-gradient {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,122,255,0.15) 0%, rgba(255,255,255,0) 70%);
+            filter: blur(50px);
+            z-index: -1;
         }
-        input {
+
+        /* Login Card - Glassmorphism Style */
+        .login-card {
+            background: var(--card-bg);
+            backdrop-filter: var(--blur-effect);
+            -webkit-backdrop-filter: var(--blur-effect); /* Safari Support */
+            padding: 40px 30px;
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-soft);
             width: 90%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            max-width: 360px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: var(--transition);
         }
+
+        /* Header / Logo Section */
+        .logo-area {
+            margin-bottom: 35px;
+        }
+
+        .logo-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #007AFF 0%, #00C7FF 100%);
+            border-radius: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 15px auto;
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        p.subtitle {
+            margin: 5px 0 0 0;
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+
+        /* Input Group Style */
+        .input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        input {
+            width: 100%;
+            padding: 16px 20px;
+            margin: 0;
+            border-radius: var(--border-radius-md);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            background-color: rgba(255, 255, 255, 0.8);
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: var(--transition);
+            color: #000; /* Light mode text */
+        }
+
+        @media (prefers-color-scheme: dark) {
+            input {
+                background-color: rgba(44, 44, 46, 0.8);
+                border-color: rgba(255, 255, 255, 0.05);
+                color: #fff;
+            }
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background-color: #FFFFFF;
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            input:focus {
+                background-color: #1C1C1E;
+            }
+        }
+
+        /* Login Button Style */
         button {
             width: 100%;
-            padding: 10px;
-            background-color: #007BFF;
+            padding: 16px;
+            background: linear-gradient(180deg, #007AFF 0%, #0062D1 100%);
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: var(--border-radius-md);
             cursor: pointer;
-            font-size: 16px;
+            font-size: 17px;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: var(--transition);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
         }
+
         button:hover {
-            background-color: #0056b3;
+            opacity: 0.9;
+            transform: translateY(-1px);
         }
+
+        button:active {
+            transform: translateY(1px);
+            opacity: 1;
+        }
+
+        /* Message / Error Box (iOS Alert Style) */
         #message {
-            margin-top: 15px;
-            color: red;
+            margin-top: 20px;
             font-size: 14px;
+            min-height: 1.4em;
+            padding: 10px;
+            border-radius: 8px;
+            transition: var(--transition);
         }
+        
+        .error-msg {
+            color: #FF3B30; /* iOS Red */
+            background-color: rgba(255, 59, 48, 0.1);
+        }
+        
+        .success-msg {
+            color: #34C759; /* iOS Green */
+            background-color: rgba(52, 199, 89, 0.1);
+        }
+
     </style>
 </head>
 <body>
 
-<div class="login-container">
-    <h2>เข้าสู่ระบบ</h2>
-    <input type="email" id="emailInput" placeholder="กรอกอีเมลของคุณ" required>
-    <input type="password" id="passwordInput" placeholder="กรอกรหัสผ่าน" required>
-    <button onclick="checkLogin()">Login</button>
+<div class="bg-gradient"></div>
+
+<div class="login-card">
+    <div class="logo-area">
+        <div class="logo-icon">N</div>
+        <h2>NSC Port</h2>
+        <p class="subtitle">กรอกรหัสผ่านเพื่อเข้าสู่ระบบ</p>
+    </div>
+
+    <div class="input-group">
+        <input type="email" id="emailInput" placeholder="อีเมล (เช่น name@mail.com)" required>
+    </div>
+    <div class="input-group">
+        <input type="password" id="passwordInput" placeholder="รหัสผ่าน" required>
+    </div>
+
+    <button onclick="checkLogin()">เข้าสู่ระบบ</button>
+    
     <div id="message"></div>
 </div>
 
 <script>
-    // ตั้งค่ารหัสผ่านที่ถูกต้องไว้ที่นี่ (คำเตือน: ในระบบจริงห้ามเขียนรหัสผ่านไว้ในฝั่ง Client เด็ดขาด)
-    const CORRECT_PASSWORD = "mypassword123"; 
+    // รหัสผ่านที่ถูกต้องที่กำหนดใหม่
+    const CORRECT_PASSWORD = "NTUN2026"; 
 
     function checkLogin() {
         const email = document.getElementById("emailInput").value.trim();
         const password = document.getElementById("passwordInput").value;
         const messageDiv = document.getElementById("message");
 
+        // รีเซ็ตสไตล์ข้อความ
+        messageDiv.className = "";
+        messageDiv.textContent = "";
+
         if (!email || !password) {
-            messageDiv.textContent = "กรุณากรอกอีเมลและรหัสผ่านให้ครบถ้วน";
+            showMessage("error-msg", "กรุณากรอกอีเมลและรหัสผ่านให้ครบถ้วน");
             return;
         }
 
-        // คีย์สำหรับเก็บข้อมูลใน localStorage แยกตามอีเมล
         const attemptsKey = email + "_attempts";
         const lockTimeKey = email + "_lockUntil";
-
         const now = new Date().getTime();
         const lockUntil = localStorage.getItem(lockTimeKey);
 
-        // 1. ตรวจสอบว่าอีเมลนี้ถูกล็อคอยู่หรือไม่
+        // 1. ตรวจสอบล็อค 1 วัน
         if (lockUntil && now < parseInt(lockUntil)) {
             const unlockDate = new Date(parseInt(lockUntil));
-            messageDiv.textContent = `อีเมลนี้ถูกระงับการใช้งานชั่วคราว กรุณาลองใหม่ในวันที่ ${unlockDate.toLocaleString()}`;
+            showMessage("error-msg", `อีเมลนี้ถูกระงับชั่วคราว ลองใหม่หลัง: ${unlockDate.toLocaleTimeString()}`);
             return;
         }
 
-        // 2. กรณีที่รหัสผ่าน "ถูกต้อง"
+        // 2. รหัสผ่านถูกต้อง
         if (password === CORRECT_PASSWORD) {
-            // เคลียร์ประวัติการกรอกผิด
             localStorage.removeItem(attemptsKey);
             localStorage.removeItem(lockTimeKey);
-            messageDiv.style.color = "green";
-            messageDiv.textContent = "เข้าสู่ระบบสำเร็จ! กำลังเปลี่ยนหน้า...";
+            showMessage("success-msg", "เข้าสู่ระบบสำเร็จ! กำลังเปลี่ยนหน้า...");
             
-            // เปลี่ยนหน้าไปยังเว็บที่ต้องการ
             setTimeout(() => {
                 window.location.href = "https://hero733.github.io/Nsc-/";
-            }, 1000);
+            }, 1200);
             return;
         }
 
-        // 3. กรณีที่รหัสผ่าน "ผิด"
+        // 3. รหัสผ่านผิด
         let attempts = parseInt(localStorage.getItem(attemptsKey) || "0");
         attempts++;
 
         if (attempts >= 5) {
-            // หากผิดครบ 5 ครั้ง ให้ล็อค 1 วัน (24 ชั่วโมง * 60 นาที * 60 วินาที * 1000 มิลลิวินาที)
+            // ล็อค 1 วัน
             const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
-            const unlockTime = now + oneDayInMilliseconds;
-            
-            localStorage.setItem(lockTimeKey, unlockTime);
-            localStorage.removeItem(attemptsKey); // รีเซ็ตตัวนับ
-            
-            messageDiv.textContent = "คุณกรอกรหัสผ่านผิดครบ 5 ครั้ง บัญชีนี้ถูกล็อคเป็นเวลา 1 วัน";
+            localStorage.setItem(lockTimeKey, now + oneDayInMilliseconds);
+            localStorage.removeItem(attemptsKey);
+            showMessage("error-msg", "ผิดครบ 5 ครั้ง บัญชีนี้ถูกล็อค 1 วัน");
         } else {
-            // บันทึกจำนวนครั้งที่ผิด และแจ้งเตือน
             localStorage.setItem(attemptsKey, attempts);
-            messageDiv.textContent = `รหัสผ่านไม่ถูกต้อง! (คุณเหลือโอกาสอีก ${5 - attempts} ครั้ง)`;
+            showMessage("error-msg", `รหัสผ่านผิด! (เหลืออีก ${5 - attempts} ครั้ง)`);
         }
+    }
+
+    // Helper function to show formatted messages
+    function showMessage(type, text) {
+        const messageDiv = document.getElementById("message");
+        messageDiv.textContent = text;
+        messageDiv.className = type;
     }
 </script>
 
