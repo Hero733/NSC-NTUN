@@ -2,202 +2,162 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NSC Portal - Cloud Access</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NSC Portal | Deep Gradient Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #007AFF;
-            --ios-bg: #f2f2f7;
-            --glass-bg: rgba(255, 255, 255, 0.7);
-            --blur: blur(25px) saturate(180%);
+            --color-sky: #7dd3fc;
+            --color-blue: #2563eb;
+            --color-navy: #1e3a8a;
+            --color-purple: #4c1d95;
+        }
+        body { 
+            font-family: 'Anuphan', sans-serif;
+            background: linear-gradient(180deg, var(--color-sky) 0%, var(--color-blue) 35%, var(--color-navy) 70%, var(--color-purple) 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: white;
+            overflow: hidden;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .btn-ios {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-ios:active { transform: scale(0.95); opacity: 0.8; }
+        
+        /* Cloud Warp Effect */
+        #cloud-warp {
+            position: fixed;
+            top: 0;
+            left: -150%;
+            width: 150%;
+            height: 100%;
+            background: radial-gradient(circle, #fff 0%, #f0f9ff 50%, rgba(255,255,255,0) 100%);
+            filter: blur(60px);
+            z-index: 9999;
+            pointer-events: none;
+            transition: transform 1.2s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+        .warp-active #cloud-warp {
+            transform: translateX(200%);
         }
 
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --ios-bg: #000000;
-                --glass-bg: rgba(28, 28, 30, 0.7);
+        .hidden-step { display: none; }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4">
+
+    <div id="cloud-warp"></div>
+
+    <div id="step-google" class="glass-panel p-10 rounded-[3rem] text-center max-w-sm w-full animate-fade-in">
+        <div class="w-24 h-24 bg-white/20 mx-auto mb-6 rounded-3xl flex items-center justify-center text-4xl shadow-2xl">☁️</div>
+        <h1 class="text-3xl font-bold mb-2">NSC Cloud</h1>
+        <p class="text-white/60 mb-8 text-xs uppercase tracking-widest">Sign in with Google</p>
+        
+        <div class="flex justify-center">
+            <div id="g_id_onload"
+                 data-client_id="802485672001-7tuhmifm1ph2mb09hle6r6hf0tahu9gv.apps.googleusercontent.com"
+                 data-callback="handleGoogleLogin"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin" data-type="standard" data-shape="pill" data-theme="filled_blue" data-text="signin_with" data-size="large"></div>
+        </div>
+    </div>
+
+    <div id="step-password" class="hidden-step glass-panel p-10 rounded-[3rem] text-center max-w-sm w-full">
+        <div class="w-20 h-20 bg-sky-400/30 mx-auto mb-6 rounded-3xl flex items-center justify-center text-3xl">🔒</div>
+        <h1 class="text-3xl font-bold mb-2">Verification</h1>
+        <p class="text-white/60 mb-8 text-xs uppercase tracking-widest">Enter Access Code</p>
+        
+        <input type="password" id="entry-pin" placeholder="••••" 
+               class="w-full bg-white/10 border border-white/20 rounded-2xl p-4 text-center text-2xl tracking-widest mb-6 focus:outline-none focus:ring-2 focus:ring-sky-400 text-white placeholder-white/30">
+        
+        <button onclick="checkAccess()" class="w-full py-4 bg-white text-blue-700 rounded-2xl font-black text-lg btn-ios shadow-lg">
+            VERIFY & WARP
+        </button>
+        <p id="error-msg" class="mt-4 text-red-300 text-sm font-medium h-5"></p>
+    </div>
+
+    <script>
+        const CORRECT_PIN = "NTUN2026";
+        const TARGET_URL = "https://hero733.github.io/Nsc-/";
+        let userEmail = "guest"; // จะถูกเขียนทับด้วย email จาก Google
+
+        // 1. จัดการเมื่อ Google Login สำเร็จ
+        function handleGoogleLogin(response) {
+            // ถอดรหัส JWT เบื้องต้น (เพื่อให้ได้ email มาใช้ทำระบบล็อค)
+            const payload = JSON.parse(atob(response.credential.split('.')[1]));
+            userEmail = payload.email;
+
+            // สลับหน้าจอ
+            document.getElementById('step-google').classList.add('hidden-step');
+            document.getElementById('step-password').classList.remove('hidden-step');
+        }
+
+        // 2. ตรวจสอบการเข้าถึง
+        function checkAccess() {
+            const inputPin = document.getElementById('entry-pin').value;
+            const errorMsg = document.getElementById('error-msg');
+            const now = new Date().getTime();
+
+            // คีย์สำหรับเก็บข้อมูลแยกตามอีเมล
+            const lockKey = userEmail + "_lockUntil";
+            const attemptKey = userEmail + "_attempts";
+
+            // เช็คสถานะการล็อค 1 วัน
+            const lockUntil = localStorage.getItem(lockKey);
+            if (lockUntil && now < parseInt(lockUntil)) {
+                const remaining = new Date(parseInt(lockUntil));
+                errorMsg.innerText = "ถูกล็อคชั่วคราว ลองใหม่พรุ่งนี้";
+                return;
+            }
+
+            if (inputPin === CORRECT_PIN) {
+                // ถ้าถูก: เคลียร์ประวัติ และเริ่มวาร์ป
+                localStorage.removeItem(attemptKey);
+                localStorage.removeItem(lockKey);
+                errorMsg.className = "mt-4 text-emerald-300 text-sm font-medium";
+                errorMsg.innerText = "ACCESS GRANTED. WARPING...";
+                
+                triggerCloudWarp();
+            } else {
+                // ถ้าผิด: นับจำนวนครั้ง
+                let attempts = parseInt(localStorage.getItem(attemptKey) || "0") + 1;
+                
+                if (attempts >= 5) {
+                    const oneDay = 24 * 60 * 60 * 1000;
+                    localStorage.setItem(lockKey, now + oneDay);
+                    localStorage.removeItem(attemptKey);
+                    errorMsg.innerText = "ผิดครบ 5 ครั้ง ระบบถูกล็อค 1 วัน";
+                } else {
+                    localStorage.setItem(attemptKey, attempts);
+                    errorMsg.innerText = `รหัสผิด! เหลือโอกาสอีก ${5 - attempts} ครั้ง`;
+                    // สั่นช่อง input แบบ iOS
+                    const inputField = document.getElementById('entry-pin');
+                    inputField.classList.add('translate-x-1');
+                    setTimeout(() => inputField.classList.remove('translate-x-1'), 100);
+                }
             }
         }
 
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro", sans-serif;
-            background-color: var(--ios-bg);
-            display: flex; justify-content: center; align-items: center;
-            overflow: hidden;
-        }
-
-        /* --- Cloud Warp Transition --- */
-        .cloud-overlay {
-            position: fixed; top: 0; left: -100%; width: 200%; height: 100%;
-            background: radial-gradient(circle, #fff 0%, #f0f0f0 40%, rgba(255,255,255,0) 70%);
-            z-index: 9999; pointer-events: none;
-            filter: blur(50px); opacity: 0;
-            transition: transform 1.2s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.5s;
-        }
-
-        .cloud-overlay.active {
-            opacity: 1; transform: translateX(100%);
-        }
-
-        /* --- Login Card --- */
-        .card {
-            background: var(--glass-bg);
-            backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
-            padding: 40px 30px; border-radius: 32px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            width: 340px; text-align: center;
-            border: 1px solid rgba(255,255,255,0.2);
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .hidden { display: none; opacity: 0; transform: scale(0.9); }
-
-        .logo-box {
-            width: 70px; height: 70px;
-            background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
-            border-radius: 18px; margin: 0 auto 20px;
-            display: flex; justify-content: center; align-items: center;
-            font-size: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        }
-
-        h2 { font-weight: 700; margin: 10px 0; letter-spacing: -0.5px; color: var(--ios-bg === '#000000' ? '#fff' : '#000'); }
-        p { color: #8e8e93; font-size: 14px; margin-bottom: 25px; }
-
-        input {
-            width: 100%; padding: 15px; border-radius: 14px; border: none;
-            background: rgba(0,0,0,0.05); margin-bottom: 15px;
-            font-size: 16px; box-sizing: border-box; outline: none;
-            text-align: center; font-weight: 600; letter-spacing: 2px;
-        }
-
-        button {
-            width: 100%; padding: 16px; border-radius: 14px; border: none;
-            background: #007AFF; color: #fff; font-size: 16px; font-weight: 600;
-            cursor: pointer; transition: 0.3s;
-        }
-
-        /* --- Loading Spinner --- */
-        .spinner {
-            border: 3px solid rgba(0,0,0,0.1); border-top: 3px solid var(--primary-color);
-            border-radius: 50%; width: 30px; height: 30px;
-            animation: spin 1s linear infinite; margin: 20px auto;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        #message { margin-top: 15px; font-size: 13px; color: #ff3b30; }
-    </style>
-</head>
-<body>
-
-<div class="cloud-overlay" id="cloud"></div>
-
-<div class="card" id="step-google">
-    <div class="logo-box">☁️</div>
-    <h2>NSC Cloud</h2>
-    <p>เข้าสู่ระบบด้วย Google เพื่อดำเนินการต่อ</p>
-    
-    <div id="g_id_onload"
-         data-client_id="802485672001-7tuhmifm1ph2mb09hle6r6hf0tahu9gv.apps.googleusercontent.com"
-         data-callback="handleCredentialResponse"
-         data-auto_prompt="false">
-    </div>
-    <div class="g_id_signin" data-type="standard" data-shape="pill" data-theme="filled_blue" data-text="signin_with" data-size="large" data-logo_alignment="left"></div>
-</div>
-
-<div class="card hidden" id="step-loading">
-    <div class="spinner"></div>
-    <p>กำลังตรวจสอบความปลอดภัย...</p>
-</div>
-
-<div class="card hidden" id="step-password">
-    <div class="logo-box">🔒</div>
-    <h2>Verification</h2>
-    <p>กรุณากรอกรหัสผ่าน NTUN</p>
-    <input type="password" id="passInput" placeholder="••••••••" maxlength="10">
-    <button onclick="verifyPassword()">Verify & Access</button>
-    <div id="message"></div>
-</div>
-
-<script>
-    const CLOUD = document.getElementById('cloud');
-    const CORRECT_PW = "NTUN2026";
-
-    // เมื่อล็อกอิน Google สำเร็จ
-    function handleCredentialResponse(response) {
-        console.log("Encoded JWT ID token: " + response.credential);
-        
-        // สลับไปหน้า Loading
-        switchStep('step-google', 'step-loading');
-        
-        // หน่วงเวลาเหมือนกำลังโหลดข้อมูล
-        setTimeout(() => {
-            switchStep('step-loading', 'step-password');
-        }, 2000);
-    }
-
-    // เมื่อกดยืนยันรหัสผ่าน
-    function verifyPassword() {
-        const input = document.getElementById('passInput').value;
-        const msg = document.getElementById('message');
-        const email = "user_cloud"; // จำลองชื่ออีเมลสำหรับการล็อค
-
-        // เช็คล็อค 1 วัน (โค้ดชุดเดิมจากครั้งที่แล้ว)
-        const lockUntil = localStorage.getItem(email + "_lockUntil");
-        if (lockUntil && new Date().getTime() < parseInt(lockUntil)) {
-            msg.textContent = "บัญชีนี้ถูกล็อคชั่วคราว ลองใหม่พรุ่งนี้";
-            return;
-        }
-
-        if (input === CORRECT_PW) {
-            msg.style.color = "#34c759";
-            msg.textContent = "ยืนยันสำเร็จ กำลังวาร์ป...";
+        // 3. แอนิเมชั่นเมฆวาร์ป
+        function triggerCloudWarp() {
+            document.body.classList.add('warp-active');
             
-            startWarp();
-        } else {
-            handleWrongPassword(email);
-        }
-    }
-
-    function handleWrongPassword(email) {
-        const msg = document.getElementById('message');
-        let attempts = parseInt(localStorage.getItem(email + "_attempts") || "0") + 1;
-        
-        if (attempts >= 5) {
-            localStorage.setItem(email + "_lockUntil", new Date().getTime() + (24 * 60 * 60 * 1000));
-            localStorage.removeItem(email + "_attempts");
-            msg.textContent = "ผิดครบ 5 ครั้ง บัญชีโดนล็อค 1 วัน";
-        } else {
-            localStorage.setItem(email + "_attempts", attempts);
-            msg.textContent = `รหัสผิด! (เหลืออีก ${5 - attempts} ครั้ง)`;
-        }
-    }
-
-    // แอนิเมชั่นเมฆและวาปร์
-    function startWarp() {
-        // เริ่มแอนิเมชั่นเมฆเลื่อน
-        CLOUD.classList.add('active');
-        
-        // เมื่อเมฆบังเต็มจอ (ประมาณ 0.8 วิ) ให้เปลี่ยนหน้า
-        setTimeout(() => {
-            window.location.href = "https://hero733.github.io/Nsc-/";
-        }, 800);
-    }
-
-    // Helper สลับหน้า Card
-    function switchStep(oldId, newId) {
-        document.getElementById(oldId).classList.add('hidden');
-        setTimeout(() => {
-            document.getElementById(oldId).style.display = 'none';
-            const newElem = document.getElementById(newId);
-            newElem.style.display = 'block';
+            // รอให้เมฆเลื่อนมาบังจอ (ประมาณ 0.7-0.8 วินาที) แล้วเปลี่ยนหน้า
             setTimeout(() => {
-                newElem.classList.remove('hidden');
-            }, 50);
-        }, 500);
-    }
-</script>
-
+                window.location.href = TARGET_URL;
+            }, 850);
+        }
+    </script>
 </body>
 </html>
