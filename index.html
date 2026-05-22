@@ -21,7 +21,7 @@
             min-height: 100vh;
             color: white;
             overflow: hidden;
-            perspective: 1000px; /* สำหรับมิติความลึก */
+            perspective: 1000px;
         }
         
         .glass-panel {
@@ -38,7 +38,6 @@
         }
         .btn-ios:active { transform: scale(0.92); opacity: 0.8; }
 
-        /* การเปลี่ยนหน้าระหว่าง Card */
         .step-container {
             position: absolute;
             width: 100%;
@@ -60,7 +59,6 @@
             z-index: 10;
         }
 
-        /* เอฟเฟกต์ Warp แสงทะลุมิติ */
         #warp-effect {
             position: fixed;
             inset: -50%;
@@ -84,7 +82,6 @@
             filter: blur(20px);
         }
 
-        /* อนิเมชั่นสั่นเมื่อรหัสผิด */
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             20%, 60% { transform: translateX(-10px); }
@@ -112,14 +109,11 @@
                 <div id="g_id_onload"
                      data-client_id="802485672001-7tuhmifm1ph2mb09hle6r6hf0tahu9gv.apps.googleusercontent.com"
                      data-callback="handleGoogleLogin"
+                     data-ux_mode="popup"
                      data-auto_prompt="false">
                 </div>
                 <div class="g_id_signin" data-type="standard" data-shape="pill" data-theme="filled_blue" data-text="signin_with" data-size="large"></div>
             </div>
-            
-            <button onclick="mockGoogleLogin()" class="mt-4 text-xs text-white/40 underline hover:text-white transition">
-                [ทดสอบ] ข้ามการล็อกอิน Google
-            </button>
         </div>
     </div>
 
@@ -129,7 +123,7 @@
                 🔒
             </div>
             <h1 class="text-3xl font-bold mb-2">Verification</h1>
-            <p id="user-display" class="text-white/60 mb-8 text-xs font-medium tracking-wide">user@gmail.com</p>
+            <p id="user-display" class="text-white/60 mb-8 text-xs font-medium tracking-wide">กำลังดึงข้อมูลบัญชี...</p>
             
             <input type="password" id="entry-pin" placeholder="••••••••" 
                    class="w-full bg-black/20 border border-white/20 rounded-2xl p-4 text-center text-2xl tracking-[0.3em] mb-6 focus:outline-none focus:ring-2 focus:ring-sky-400 text-white placeholder-white/20 backdrop-blur-md transition-all">
@@ -146,26 +140,24 @@
         const TARGET_URL = "https://hero733.github.io/Nsc-/";
         let userEmail = ""; 
 
-        // 1. Google Login (ใช้งานจริง)
+        // ฟังก์ชันรับค่าหลังจากเลือกบัญชี Google สำเร็จ
         function handleGoogleLogin(response) {
             try {
+                // ถอดรหัสหาอีเมลผู้ใช้เพื่อเอามาใช้ในระบบล็อก
                 const payload = JSON.parse(atob(response.credential.split('.')[1]));
                 userEmail = payload.email;
+                
+                // เมื่อได้อีเมลแล้ว ให้ขยับหน้าจอไปหน้ากรอกรหัสทันที
                 switchToPasswordStep();
             } catch (error) {
                 console.error("Auth Error", error);
+                alert("เกิดข้อผิดพลาดในการเชื่อมต่อกับ Google กรุณาลองใหม่อีกครั้ง");
             }
         }
 
-        // 1.5. จำลองข้าม Google
-        function mockGoogleLogin() {
-            userEmail = "test_developer@gmail.com"; 
-            switchToPasswordStep();
-        }
-
-        // สลับหน้าจอแบบสมูท
+        // ฟังก์ชันสลับหน้าจอจากหน้า Google ไปหน้ากรอกรหัสผ่าน
         function switchToPasswordStep() {
-            document.getElementById('user-display').innerText = `Logged in as: ${userEmail}`;
+            document.getElementById('user-display').innerText = `Email: ${userEmail}`;
             
             const step1 = document.getElementById('step-google');
             const step2 = document.getElementById('step-password');
@@ -176,71 +168,66 @@
             setTimeout(() => {
                 step2.classList.remove('hidden-step');
                 step2.classList.add('active-step');
-                document.getElementById('entry-pin').focus();
+                document.getElementById('entry-pin').focus(); // โฟกัสช่องกรอกรหัสให้อัตโนมัติ
             }, 300);
         }
 
-        // 2. เช็ครหัสผ่านและล็อคอีเมล
+        // ระบบเช็ครหัสผ่าน และบล็อกอีเมลที่พิมพ์ผิด
         function checkAccess() {
             const inputPin = document.getElementById('entry-pin').value;
             const errorMsg = document.getElementById('error-msg');
             const card = document.getElementById('password-card');
             const now = new Date().getTime();
 
-            // คีย์สำหรับล็อคเฉพาะอีเมลนั้นๆ
             const lockKey = userEmail + "_lockUntil";
             const attemptKey = userEmail + "_attempts";
 
-            // เช็คว่าอีเมลนี้โดนแบนอยู่หรือไม่
+            // เช็คว่าอีเมลนี้ถูกบล็อกอยู่หรือไม่
             const lockUntil = localStorage.getItem(lockKey);
             if (lockUntil && now < parseInt(lockUntil)) {
-                triggerError(card, errorMsg, "อีเมลนี้ถูกล็อคชั่วคราว ลองใหม่พรุ่งนี้");
+                triggerError(card, errorMsg, "อีเมลนี้ถูกล็อคชั่วคราวเนื่องจากรหัสผิดครบ 5 ครั้ง");
                 return;
             }
 
-            // ถ้ารหัสถูกต้อง
+            // ถ้ารหัสถูกต้อง -> สั่งเริ่มแอนิเมชั่นวาร์ปแสง
             if (inputPin === CORRECT_PIN) {
                 localStorage.removeItem(attemptKey);
                 localStorage.removeItem(lockKey);
-                errorMsg.style.color = "#6ee7b7"; // emerald-300
+                errorMsg.style.color = "#6ee7b7"; 
                 errorMsg.innerText = "ACCESS GRANTED. HYPER-JUMP INITIATED...";
                 
                 triggerEpicWarp();
             } else {
-                // ถ้ารหัสผิด
+                // ถ้ารหัสผิด -> นับจำนวนครั้งแยกตามอีเมล
                 let attempts = parseInt(localStorage.getItem(attemptKey) || "0") + 1;
                 
                 if (attempts >= 5) {
-                    const oneDay = 24 * 60 * 60 * 1000;
+                    const oneDay = 24 * 60 * 60 * 1000; // ล็อก 1 วัน
                     localStorage.setItem(lockKey, now + oneDay);
                     localStorage.removeItem(attemptKey);
-                    triggerError(card, errorMsg, "ผิดครบ 5 ครั้ง อีเมลถูกล็อค 1 วัน");
+                    triggerError(card, errorMsg, "ผิดครบ 5 ครั้ง อีเมลนี้โดนล็อค 1 วัน");
                 } else {
                     localStorage.setItem(attemptKey, attempts);
-                    triggerError(card, errorMsg, `รหัสผิด! เหลือโอกาสอีก ${5 - attempts} ครั้ง`);
+                    triggerError(card, errorMsg, `รหัสผิด! อีเมลนี้เหลือโอกาสอีก ${5 - attempts} ครั้ง`);
                 }
             }
         }
 
-        // ทำให้กล่องสั่นเวลาใส่รหัสผิด
+        // แสดงแจ้งเตือนรหัสผิด + กล่องสั่น
         function triggerError(cardElement, msgElement, text) {
-            msgElement.style.color = "#fca5a5"; // red-300
+            msgElement.style.color = "#fca5a5"; 
             msgElement.innerText = text;
             cardElement.classList.remove('shake-animation');
-            void cardElement.offsetWidth; // Trigger reflow
+            void cardElement.offsetWidth; // บังคับรีเฟรช DOM แอนิเมชั่น
             cardElement.classList.add('shake-animation');
             document.getElementById('entry-pin').value = '';
         }
 
-        // 3. แอนิเมชั่นทะลุมิติแบบสุดยอด
+        // แอนิเมชั่นระเบิดแสงทะลุมิติ
         function triggerEpicWarp() {
-            // ซ่อนคีย์บอร์ดมือถือ
             document.getElementById('entry-pin').blur(); 
-            
-            // เพิ่ม class เพื่อเล่นแอนิเมชั่น
             document.body.classList.add('warping');
             
-            // วาร์ปไปเว็บจริงหลังจากเล่นแอนิเมชั่นเสร็จ (1 วินาที)
             setTimeout(() => {
                 window.location.href = TARGET_URL;
             }, 1000);
